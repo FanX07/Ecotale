@@ -1,0 +1,16 @@
+{
+  "appId": "com.ecotale.app",
+  "appName": "EcoTale",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "Camera": {
+      "promptLabelHeader": "Add a nature observation",
+      "promptLabelPhoto": "Choose from Photos",
+      "promptLabelPicture": "Take a Photo"
+    }
+  }
+}

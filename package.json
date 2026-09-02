@@ -1,0 +1,28 @@
+{
+  "name": "ecotale-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EcoTale mobile app shell",
+  "scripts": {
+    "dev": "vite",
+    "build": "node work/convert-prototype-to-native.mjs && vite build && rm -rf dist/figma-task2/frames && mkdir -p dist/server && cp work/sites-worker.js dist/server/index.js",
+    "preview": "vite preview",
+    "cap:add:ios": "cap add ios",
+    "cap:add:android": "cap add android",
+    "cap:sync": "cap sync",
+    "cap:open:ios": "cap open ios",
+    "cap:open:android": "cap open android"
+  },
+  "dependencies": {
+    "@capacitor/camera": "^7.0.2",
+    "@capacitor/core": "^7.4.3",
+    "@capacitor/geolocation": "^7.1.5",
+    "@capacitor/ios": "^7.4.3",
+    "@supabase/supabase-js": "^2.57.4"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.3",
+    "@vitejs/plugin-legacy": "^7.2.1",
+    "vite": "^7.1.3"
+  }
+}

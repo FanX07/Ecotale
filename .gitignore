@@ -1,0 +1,10 @@
+node_modules/
+dist/
+outputs/
+work/DerivedData*/
+ios/App/App/public/
+ios/
+.DS_Store
+*.swp
+.env
+public/figma-task2/frames/
