@@ -1,7 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 
-const url = import.meta.env.VITE_SUPABASE_URL;
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+declare global {
+  interface Window {
+    __ECOTALE_SUPABASE__?: { url?: string; anonKey?: string };
+  }
+}
+
+const runtimeConfig = window.__ECOTALE_SUPABASE__;
+const url = runtimeConfig?.url || import.meta.env.VITE_SUPABASE_URL;
+const anonKey = runtimeConfig?.anonKey || import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 export const isSupabaseConfigured = Boolean(url && anonKey);
 

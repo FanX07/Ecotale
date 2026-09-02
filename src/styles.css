@@ -4,3 +4,18 @@ html, body, #app { width: 100%; height: 100%; margin: 0; overflow: hidden; }
 body { background: #fbfbf8; }
 .app-shell { width: 100%; height: 100%; }
 .ecotale-app { display: block; width: 100%; height: 100%; border: 0; background: #fbfbf8; }
+.auth-gate { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 24px; background: linear-gradient(145deg, rgba(21,76,33,.88), rgba(116,205,95,.78)), url('/figma-task1/garden-background.png') center/cover; transition: opacity .2s ease, visibility .2s ease; }
+.auth-gate.is-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+.auth-card { width: min(100%, 390px); padding: 34px 28px 28px; border: 1px solid rgba(255,255,255,.55); border-radius: 28px; background: rgba(255,255,255,.94); box-shadow: 0 24px 70px rgba(0,0,0,.25); }
+.auth-kicker { margin: 0 0 8px; color: #4a9a4a; font-size: 12px; font-weight: 800; letter-spacing: .16em; }
+.auth-card h1 { margin: 0; color: #182018; font-family: Georgia, serif; font-size: 34px; font-weight: 500; }
+.auth-copy { min-height: 44px; margin: 10px 0 22px; color: #5a5f62; font-size: 15px; line-height: 1.45; }
+.auth-card label { display: grid; gap: 7px; margin: 14px 0; color: #253326; font-size: 14px; font-weight: 700; }
+.auth-card input { width: 100%; min-height: 50px; padding: 12px 14px; border: 1px solid #d8ddd4; border-radius: 13px; background: #fff; color: #182018; font: 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.auth-card input:focus { outline: 3px solid rgba(124,192,116,.3); border-color: #70bd69; }
+.auth-message { min-height: 20px; margin: 12px 0 2px; color: #397540; font-size: 13px; line-height: 1.3; }
+.auth-message.is-error { color: #b53d3d; }
+.auth-submit, .auth-switch, .auth-preview { width: 100%; min-height: 50px; margin-top: 12px; border-radius: 999px; font-size: 16px; font-weight: 750; cursor: pointer; }
+.auth-submit { border: 0; background: #69bd57; color: #fff; }
+.auth-submit:disabled { opacity: .55; cursor: default; }
+.auth-switch, .auth-preview { border: 1px solid #d8ddd4; background: #fff; color: #2f6937; }

@@ -303,8 +303,9 @@ if (!template.includes('ecotale-responsive-v2')) {
   );
 }
 
-if (!template.includes('/task1-flow.css')) {
-  template = template.replace('</head>', '<link rel="stylesheet" href="/task1-flow.css"></head>');
+template = template.replaceAll('href="/task1-flow.css"', 'href="task1-flow.css"');
+if (!template.includes('task1-flow.css')) {
+  template = template.replace('</head>', '<link rel="stylesheet" href="task1-flow.css"></head>');
 }
 
 const safeManifest = JSON.stringify(manifest).replace(/<\/script/gi, '<\\u002Fscript');

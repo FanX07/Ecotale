@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <title>EcoTale</title>
+    <style>html,body,iframe{margin:0;width:100%;height:100%;border:0;background:#f1efe8}body{overflow:hidden}</style>
+  </head>
+  <body>
+    <iframe title="EcoTale"></iframe>
+    <script>
+      async function unpack(path) {
+        const stream = (await fetch(path)).body.pipeThrough(new DecompressionStream('gzip'));
+        return new Response(stream).text();
+      }
+      Promise.all([unpack('app.html.gz'), unpack('task1-flow.css.gz')]).then(([page, css]) => {
+        const html = page.replace('<link rel="stylesheet" href="/task1-flow.css">', '<style>' + css + '</style>');
+        document.querySelector('iframe').src = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+      }).catch(() => { document.body.textContent = 'EcoTale could not load. Please refresh.'; });
+    </script>
+  </body>
+</html>

@@ -43,6 +43,7 @@ create table if not exists public.posts (
 -- Visitors may add rows, but only project administrators can read them.
 create table if not exists public.task_submissions (
   id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete set null,
   task_number smallint not null check (task_number between 3 and 5),
   kind text not null check (char_length(kind) between 1 and 40),
   title text not null check (char_length(title) between 1 and 160),
@@ -53,6 +54,9 @@ create table if not exists public.task_submissions (
   photo_path text,
   created_at timestamptz not null default now()
 );
+
+alter table public.task_submissions
+  add column if not exists user_id uuid references auth.users(id) on delete set null;
 
 insert into storage.buckets (id, name, public)
 values ('observation-photos', 'observation-photos', false)
@@ -78,8 +82,9 @@ create policy "Users create their own posts" on public.posts for insert to authe
 create policy "Users update their own posts" on public.posts for update to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
 create policy "Users delete their own posts" on public.posts for delete to authenticated using ((select auth.uid()) = user_id);
 drop policy if exists "Visitors submit EcoTale task responses" on public.task_submissions;
-create policy "Visitors submit EcoTale task responses" on public.task_submissions
-  for insert to anon, authenticated with check (true);
+drop policy if exists "Signed-in users submit EcoTale task responses" on public.task_submissions;
+create policy "Signed-in users submit EcoTale task responses" on public.task_submissions
+  for insert to authenticated with check ((select auth.uid()) = user_id);
 create policy "Users upload their own observation photos" on storage.objects for insert to authenticated with check (bucket_id = 'observation-photos' and (storage.foldername(name))[1] = (select auth.uid()::text));
 create policy "Users view their own observation photos" on storage.objects for select to authenticated using (bucket_id = 'observation-photos' and (storage.foldername(name))[1] = (select auth.uid()::text));
 drop policy if exists "Visitors upload EcoTale task photos" on storage.objects;
