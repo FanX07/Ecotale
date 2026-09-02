@@ -110,6 +110,11 @@ document.addEventListener('DOMContentLoaded', async function() {
       if (blobUrls[entry.uuid]) resourceMap[entry.id] = blobUrls[entry.uuid];
     }
 
+    // Make bundled image-slot data available before React and its custom
+    // elements start. Injecting this only into the swapped document is not
+    // reliable on GitHub Pages, where its script can remain inert.
+    window.__resources = resourceMap;
+
     setStatus('Rendering...');
     for (const uuid of uuids) template = template.split(uuid).join(blobUrls[uuid]);
 
