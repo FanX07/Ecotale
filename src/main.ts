@@ -129,13 +129,92 @@ type TaskSubmission = {
   audience: string;
 };
 
+const MAX_UPLOAD_BYTES = 200 * 1024;
+const MAX_UPLOAD_EDGE = 1600;
+
+async function decodePhoto(photo: Blob) {
+  if ('createImageBitmap' in window) {
+    try {
+      return await createImageBitmap(photo, { imageOrientation: 'from-image' });
+    } catch {
+      // Fall through to the broadly supported HTMLImageElement decoder.
+    }
+  }
+
+  const url = URL.createObjectURL(photo);
+  try {
+    const image = new Image();
+    image.decoding = 'async';
+    image.src = url;
+    await image.decode();
+    return image;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function canvasBlob(canvas: HTMLCanvasElement, quality: number) {
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      blob => blob ? resolve(blob) : reject(new Error('Photo compression failed.')),
+      'image/jpeg',
+      quality
+    );
+  });
+}
+
+async function compressPhoto(photo: Blob) {
+  if (photo.size <= MAX_UPLOAD_BYTES && /image\/(jpeg|webp)/i.test(photo.type)) return photo;
+
+  const image = await decodePhoto(photo);
+  const sourceWidth = image.width;
+  const sourceHeight = image.height;
+  const initialScale = Math.min(1, MAX_UPLOAD_EDGE / Math.max(sourceWidth, sourceHeight));
+  let width = Math.max(1, Math.round(sourceWidth * initialScale));
+  let height = Math.max(1, Math.round(sourceHeight * initialScale));
+  let quality = 0.86;
+  let smallest: Blob | null = null;
+
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d', { alpha: false });
+  if (!context) throw new Error('Photo compression is not supported in this browser.');
+
+  for (let attempt = 0; attempt < 18; attempt += 1) {
+    canvas.width = width;
+    canvas.height = height;
+    context.fillStyle = '#fff';
+    context.fillRect(0, 0, width, height);
+    context.drawImage(image, 0, 0, width, height);
+
+    const compressed = await canvasBlob(canvas, quality);
+    if (!smallest || compressed.size < smallest.size) smallest = compressed;
+    if (compressed.size <= MAX_UPLOAD_BYTES) {
+      if ('close' in image && typeof image.close === 'function') image.close();
+      return compressed;
+    }
+
+    if (quality > 0.48) {
+      quality -= 0.09;
+    } else {
+      width = Math.max(1, Math.round(width * 0.82));
+      height = Math.max(1, Math.round(height * 0.82));
+      quality = 0.78;
+    }
+  }
+
+  if ('close' in image && typeof image.close === 'function') image.close();
+  if (smallest && smallest.size <= MAX_UPLOAD_BYTES) return smallest;
+  throw new Error('The photo could not be reduced below 200KB.');
+}
+
 async function storeTaskSubmission(submission: TaskSubmission) {
   if (!supabase) return;
 
   let photoPath: string | null = null;
   if (submission.image?.startsWith('blob:')) {
     try {
-      const photo = await fetch(submission.image).then(response => response.blob());
+      const originalPhoto = await fetch(submission.image).then(response => response.blob());
+      const photo = await compressPhoto(originalPhoto);
       const extension = photo.type.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
       photoPath = `${crypto.randomUUID()}.${extension}`;
       const { error } = await supabase.storage
