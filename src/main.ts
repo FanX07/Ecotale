@@ -3,7 +3,7 @@ import { supabase } from './lib/supabase';
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <main class="app-shell">
-    <iframe class="ecotale-app" src="${import.meta.env.BASE_URL}prototype.html?v=20260903-flat3" title="EcoTale"></iframe>
+    <iframe class="ecotale-app" src="${import.meta.env.BASE_URL}prototype.html?v=20260903-ui4" title="EcoTale"></iframe>
     <section class="auth-gate" aria-live="polite">
       <form class="auth-card" id="auth-form">
         <p class="auth-kicker">ECOTALE</p>
@@ -33,10 +33,28 @@ const previewButton = document.querySelector<HTMLButtonElement>('#auth-preview')
 
 let creatingAccount = false;
 let currentUserId: string | null = null;
+let currentProfile: { username: string; joinedAt: string } | null = null;
 
 function usernameEmail(username: string) {
   return `${username.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '')}@ecotale.local`;
 }
+
+function profileFromUser(user: { email?: string; created_at?: string; user_metadata?: { display_name?: unknown } }) {
+  const displayName = typeof user.user_metadata?.display_name === 'string'
+    ? user.user_metadata.display_name.trim()
+    : '';
+  return {
+    username: displayName || user.email?.split('@')[0] || 'EcoTale Explorer',
+    joinedAt: user.created_at || new Date().toISOString()
+  };
+}
+
+function sendProfile() {
+  if (!currentProfile) return;
+  appFrame?.contentWindow?.postMessage({ type: 'ecotale:profile', payload: currentProfile }, window.location.origin);
+}
+
+appFrame?.addEventListener('load', sendProfile);
 
 function showApp() {
   authGate.classList.add('is-hidden');
@@ -65,7 +83,11 @@ if (!supabase) {
 } else {
   void supabase.auth.getSession().then(({ data }) => {
     currentUserId = data.session?.user.id ?? null;
-    if (currentUserId) showApp();
+    if (data.session?.user) {
+      currentProfile = profileFromUser(data.session.user);
+      sendProfile();
+      showApp();
+    }
   });
 
   authSwitch.addEventListener('click', () => {
@@ -87,6 +109,10 @@ if (!supabase) {
     authSubmit.disabled = false;
     if (response.error) return showMessage(response.error.message);
     currentUserId = response.data.user?.id ?? null;
+    if (response.data.user) {
+      currentProfile = profileFromUser(response.data.user);
+      sendProfile();
+    }
     if (creatingAccount && !response.data.session) return showMessage('Account created. Disable email confirmation in Supabase, then sign in.', false);
     showApp();
   });
@@ -136,6 +162,10 @@ async function storeTaskSubmission(submission: TaskSubmission) {
 
 window.addEventListener('message', event => {
   if (event.origin !== window.location.origin || event.source !== appFrame?.contentWindow) return;
+  if (event.data?.type === 'ecotale:profile-ready') {
+    sendProfile();
+    return;
+  }
   if (event.data?.type !== 'ecotale:task-submission') return;
   const submission = event.data.payload as Partial<TaskSubmission>;
   if (!Number.isInteger(submission.taskNumber) || typeof submission.title !== 'string' || typeof submission.story !== 'string') return;
