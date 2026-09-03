@@ -173,9 +173,9 @@ function PlantTip({ plant, onClose }) {
     'Trees': { title: 'Tree Tip', facts: ['Trees have one main woody trunk and grow taller than shrubs.', 'Look up for a broad canopy and branching high above the ground.'], hint: 'Find an Eastern Redbud with heart-shaped leaves or pink spring blossoms.' }
   };
   const tip = tips[plant.uploadLabel];
-  return (
-    <div className="task1-modal-backdrop" role="dialog" aria-modal="true" aria-label={tip.title}>
-      <section className="task1-tip-card">
+  return ReactDOM.createPortal(
+    <div className="task1-modal-backdrop" role="dialog" aria-modal="true" aria-label={tip.title} onClick={onClose}>
+      <section className="task1-tip-card" onClick={event => event.stopPropagation()}>
         <button className="task1-tip-close" onClick={onClose} aria-label="Close">×</button>
         <h2>{tip.title}</h2>
         <h3>What to look for</h3>
@@ -184,7 +184,8 @@ function PlantTip({ plant, onClose }) {
         <h3 className="hint">Hint: Find {plant.name}</h3>
         <ul className="hint"><li>{tip.hint}</li></ul>
       </section>
-    </div>
+    </div>,
+    document.body
   );
 }
 
