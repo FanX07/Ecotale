@@ -214,6 +214,74 @@ if (profileEntry) {
 }
 
 let template = JSON.parse(templateMatch[1]);
+// Require the facilitator's task-specific password every time a player opens
+// a task from the home carousel.  Keep the gate in the prototype shell so it
+// protects all five task implementations consistently.
+if (!template.includes('TASK_ENTRY_PASSWORDS')) {
+  template = template.replace(
+    '  function PhoneApp({ initialScreen = \'welcome\', label }) {',
+    `  const TASK_ENTRY_PASSWORDS = { 1: 'eco', 2: 'tale', 3: 'uiuc', 4: 'nature', 5: 'protect' };
+
+  function TaskPasswordDialog({ task, onCancel, onUnlock }) {
+    const [password, setPassword] = React.useState('');
+    const [error, setError] = React.useState('');
+
+    React.useEffect(() => {
+      function closeOnEscape(event) {
+        if (event.key === 'Escape') onCancel();
+      }
+      window.addEventListener('keydown', closeOnEscape);
+      return () => window.removeEventListener('keydown', closeOnEscape);
+    }, [onCancel]);
+
+    function submit(event) {
+      event.preventDefault();
+      if (password === TASK_ENTRY_PASSWORDS[task.idx]) {
+        onUnlock();
+        return;
+      }
+      setError('Incorrect password. Please try again.');
+    }
+
+    return ReactDOM.createPortal(
+      <div className="task-password-backdrop" onClick={onCancel} role="presentation">
+        <form className="task-password-card" onSubmit={submit} onClick={event => event.stopPropagation()}>
+          <button className="task-password-close" type="button" onClick={onCancel} aria-label="Close">×</button>
+          <p className="task-password-kicker">TASK {task.idx}</p>
+          <h2>Enter task password</h2>
+          <p className="task-password-copy">Enter the password to begin {task.shortTitle || task.title}.</p>
+          <label htmlFor={'task-password-' + task.idx}>Password</label>
+          <input
+            id={'task-password-' + task.idx}
+            type="password"
+            value={password}
+            onChange={event => { setPassword(event.target.value); setError(''); }}
+            autoComplete="off"
+            autoFocus
+          />
+          <p className="task-password-error" aria-live="polite">{error}</p>
+          <button className="task-password-submit" type="submit">Start task</button>
+        </form>
+      </div>,
+      document.body
+    );
+  }
+
+  function PhoneApp({ initialScreen = 'welcome', label }) {`
+  );
+  template = template.replace(
+    '    const [activeTask, setActiveTask] = React.useState(null);',
+    '    const [activeTask, setActiveTask] = React.useState(null);\n    const [passwordTask, setPasswordTask] = React.useState(null);'
+  );
+  template = template.replace(
+    '        onOpenTask={(t) => { setActiveTask(t); setScreen(\'task\'); }}',
+    '        onOpenTask={(t) => setPasswordTask(t)}'
+  );
+  template = template.replace(
+    '        {showAdd && <AddSightingScreen onClose={() => setShowAdd(false)} onLogged={() => { setShowAdd(false); setPieces(p => Math.min(5, p + 1)); }}/>}\n      </PhoneFrame>',
+    `        {showAdd && <AddSightingScreen onClose={() => setShowAdd(false)} onLogged={() => { setShowAdd(false); setPieces(p => Math.min(5, p + 1)); }}/>}\n        {passwordTask && <TaskPasswordDialog\n          task={passwordTask}\n          onCancel={() => setPasswordTask(null)}\n          onUnlock={() => { const task = passwordTask; setPasswordTask(null); setActiveTask(task); setScreen('task'); }}\n        />}\n      </PhoneFrame>`
+  );
+}
 // A new player starts with an empty puzzle board. Completion state is earned,
 // never pre-filled by the selected preview screen.
 template = template.replace(
@@ -347,9 +415,9 @@ if (!template.includes('ecotale-responsive-v2')) {
 }
 
 template = template.replaceAll('href="/task1-flow.css"', 'href="task1-flow.css"');
-template = template.replace(/href="task1-flow\.css(?:\?[^\"]*)?"/g, 'href="task1-flow.css?v=20260903-ui4"');
+template = template.replace(/href="task1-flow\.css(?:\?[^\"]*)?"/g, 'href="task1-flow.css?v=20260903-ui5"');
 if (!template.includes('task1-flow.css')) {
-  template = template.replace('</head>', '<link rel="stylesheet" href="task1-flow.css?v=20260903-ui4"></head>');
+  template = template.replace('</head>', '<link rel="stylesheet" href="task1-flow.css?v=20260903-ui5"></head>');
 }
 
 const safeManifest = JSON.stringify(manifest).replace(/<\/script/gi, '<\\u002Fscript');
