@@ -9,6 +9,28 @@ const templateMatch = html.match(/<script type="__bundler\/template">\s*([\s\S]*
 if (!manifestMatch || !templateMatch) throw new Error('Prototype bundle data was not found.');
 
 const manifest = JSON.parse(manifestMatch[1]);
+
+// The original prototype stores all seeded image slots in a bundled JSON
+// resource.  On static hosts the runtime occasionally misses that resource
+// map and falls back to `.image-slots.state.json`, which GitHub Pages returns
+// as its HTML fallback.  Bake the state into the image-slot script as a data
+// URL instead, so every task image works without a companion server file.
+const imageSlotsStateEntry = manifest['0d1fa546-8124-4bbf-a011-a3edecac1302'];
+const imageSlotsScriptEntry = manifest['44252422-0e0f-4f7a-b6e3-f475bf9caca6'];
+if (imageSlotsStateEntry && imageSlotsScriptEntry) {
+  let imageSlotsState = Buffer.from(imageSlotsStateEntry.data, 'base64');
+  if (imageSlotsStateEntry.compressed) imageSlotsState = zlib.gunzipSync(imageSlotsState);
+  const slotsDataUrl = `data:application/json;base64,${imageSlotsState.toString('base64')}`;
+
+  let imageSlotsScript = Buffer.from(imageSlotsScriptEntry.data, 'base64');
+  if (imageSlotsScriptEntry.compressed) imageSlotsScript = zlib.gunzipSync(imageSlotsScript);
+  imageSlotsScript = Buffer.from(imageSlotsScript.toString('utf8').replace(
+    "const url = (window.__resources && window.__resources.imageSlotsState) || STATE_FILE;",
+    `const url = ${JSON.stringify(slotsDataUrl)};`
+  ));
+  imageSlotsScriptEntry.compressed = true;
+  imageSlotsScriptEntry.data = zlib.gzipSync(imageSlotsScript, { level: 9 }).toString('base64');
+}
 const primitivesId = '459a8c3b-26cb-4d65-ad35-9fe60f773052';
 const screensId = '7e8c2677-9d90-4cde-91aa-7e105d9cbf06';
 const primitivesEntry = manifest[primitivesId];
