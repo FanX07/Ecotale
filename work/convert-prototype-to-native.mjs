@@ -209,6 +209,27 @@ if (profileEntry) {
     profile = profile.replace('>Alex Morgan</h2>', '>{viewerProfile.username}</h2>');
     profile = profile.replace("Junior · UIUC '27 · Joined Sep 2025", 'Joined {joinedLabel}');
   }
+  if (!profile.includes("type: 'ecotale:logout'")) {
+    profile = profile.replace(
+      `          </div>
+        </div>
+      </div>
+      <TabBar active={activeTab}`,
+      `          </div>
+          <button
+            type="button"
+            onClick={() => window.parent.postMessage({ type: 'ecotale:logout' }, window.location.origin)}
+            style={{
+              width: '100%', height: 50, marginTop: 16, borderRadius: 999,
+              border: '1.5px solid #D9DED5', background: '#fff', color: '#2F7138',
+              cursor: 'pointer', fontFamily: '-apple-system, system-ui', fontSize: 16, fontWeight: 650
+            }}
+          >Log out</button>
+        </div>
+      </div>
+      <TabBar active={activeTab}`
+    );
+  }
   profileEntry.compressed = true;
   profileEntry.data = zlib.gzipSync(Buffer.from(profile), { level: 9 }).toString('base64');
 }
@@ -415,9 +436,9 @@ if (!template.includes('ecotale-responsive-v2')) {
 }
 
 template = template.replaceAll('href="/task1-flow.css"', 'href="task1-flow.css"');
-template = template.replace(/href="task1-flow\.css(?:\?[^\"]*)?"/g, 'href="task1-flow.css?v=20260903-ui5"');
+template = template.replace(/href="task1-flow\.css(?:\?[^\"]*)?"/g, 'href="task1-flow.css?v=20260903-ui6"');
 if (!template.includes('task1-flow.css')) {
-  template = template.replace('</head>', '<link rel="stylesheet" href="task1-flow.css?v=20260903-ui5"></head>');
+  template = template.replace('</head>', '<link rel="stylesheet" href="task1-flow.css?v=20260903-ui6"></head>');
 }
 
 const safeManifest = JSON.stringify(manifest).replace(/<\/script/gi, '<\\u002Fscript');

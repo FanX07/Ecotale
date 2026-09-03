@@ -3,7 +3,7 @@ import { supabase } from './lib/supabase';
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <main class="app-shell">
-    <iframe class="ecotale-app" src="${import.meta.env.BASE_URL}prototype.html?v=20260903-ui5" title="EcoTale"></iframe>
+    <iframe class="ecotale-app" src="${import.meta.env.BASE_URL}prototype.html?v=20260903-ui6" title="EcoTale"></iframe>
     <section class="auth-gate" aria-live="polite">
       <form class="auth-card" id="auth-form">
         <p class="auth-kicker">ECOTALE</p>
@@ -162,6 +162,19 @@ async function storeTaskSubmission(submission: TaskSubmission) {
 
 window.addEventListener('message', event => {
   if (event.origin !== window.location.origin || event.source !== appFrame?.contentWindow) return;
+  if (event.data?.type === 'ecotale:logout') {
+    void (async () => {
+      if (supabase) await supabase.auth.signOut();
+      currentUserId = null;
+      currentProfile = null;
+      creatingAccount = false;
+      authForm.reset();
+      updateAuthMode();
+      authGate.classList.remove('is-hidden');
+      appFrame?.contentWindow?.location.reload();
+    })();
+    return;
+  }
   if (event.data?.type === 'ecotale:profile-ready') {
     sendProfile();
     return;

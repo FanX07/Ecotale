@@ -37,7 +37,7 @@ for (const [uuid, entry] of Object.entries(manifest)) {
     bytes = Buffer.from(source);
   }
   const extension = extensions.get(entry.mime) || '.bin';
-  const filename = `${uuid}.flat5${extension}`;
+  const filename = `${uuid}.flat6${extension}`;
   fs.writeFileSync(new URL(filename, assetsDir), bytes);
   const publicUrl = `./prototype-assets/${filename}`;
   template = template.split(uuid).join(publicUrl);
