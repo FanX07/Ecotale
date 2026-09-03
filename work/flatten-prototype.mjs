@@ -29,6 +29,13 @@ const resourceUrls = {};
 for (const [uuid, entry] of Object.entries(manifest)) {
   let bytes = Buffer.from(entry.data, 'base64');
   if (entry.compressed) bytes = zlib.gunzipSync(bytes);
+  if (entry.mime.includes('javascript') || entry.mime === 'text/css') {
+    const source = bytes.toString('utf8')
+      .replaceAll("'/figma-", "'./figma-")
+      .replaceAll('"/figma-', '"./figma-')
+      .replaceAll('`/figma-', '`./figma-');
+    bytes = Buffer.from(source);
+  }
   const extension = extensions.get(entry.mime) || '.bin';
   const filename = `${uuid}${extension}`;
   fs.writeFileSync(new URL(filename, assetsDir), bytes);
