@@ -25,8 +25,8 @@ if (imageSlotsStateEntry && imageSlotsScriptEntry) {
   let imageSlotsScript = Buffer.from(imageSlotsScriptEntry.data, 'base64');
   if (imageSlotsScriptEntry.compressed) imageSlotsScript = zlib.gunzipSync(imageSlotsScript);
   imageSlotsScript = Buffer.from(imageSlotsScript.toString('utf8').replace(
-    /const url = [^;]+;/,
-    'const url = "./image-slots.state.json?v=20260903";'
+    /const url = [\s\S]*?;\s*loadP = fetch\(url\)/,
+    'const url = "./image-slots.state.json?v=20260903-final";\n    loadP = fetch(url)'
   ));
   imageSlotsScriptEntry.compressed = true;
   imageSlotsScriptEntry.data = zlib.gzipSync(imageSlotsScript, { level: 9 }).toString('base64');
