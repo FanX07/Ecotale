@@ -373,8 +373,15 @@ const TASK2_QUIZZES = [
   }
 ];
 
+const TASK2_RELATIONSHIP_TIP = [
+  ['Mutualism', 'A relationship where both species benefit from the interaction.'],
+  ['Commensalism', 'A relationship where one species benefits while the other is unaffected.'],
+  ['Predation', 'A relationship in which one organism hunts, kills, and eats another organism.'],
+  ['Parasitism', 'A relationship in which one organism lives on or inside a host and benefits while usually harming the host.']
+];
+
 function Task2Hint({ quiz, onClose }) {
-  return <div className="task2-modal" role="dialog" aria-modal="true" aria-label="Tip card"><section><button onClick={onClose} aria-label="Close tip">×</button><h2>Tip Card</h2><h3>{quiz.correct}:</h3><p>{quiz.hint}</p><h3>Hint:</h3><p>Look for who gains something in the relationship, and whether the other species is helped, unaffected, or harmed.</p></section></div>;
+  return <div className="task2-modal" role="dialog" aria-modal="true" aria-label="Tip card"><section><button onClick={onClose} aria-label="Close tip">×</button><h2>Tip Card</h2>{TASK2_RELATIONSHIP_TIP.map(([name, description]) => <div className="task2-tip-definition" key={name}><h3>{name}</h3><p>{description}</p></div>)}<div className="task2-tip-definition task2-tip-hint"><h3>Hint</h3><p>{quiz.hint}</p></div></section></div>;
 }
 
 function Task2CorrectCard({ quiz, mode, onContinue }) {
