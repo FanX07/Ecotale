@@ -188,6 +188,27 @@ if (profileEntry) {
     '<Icon name="back" size={16} color={COLORS.ink3} strokeWidth={2} />\n                <div style={{ transform: \'scaleX(-1)\', display: \'none\' }} />',
     '<span style={{ color: COLORS.ink3, fontSize: 24, lineHeight: 1 }}>›</span>'
   );
+  if (!profile.includes('ecotale:profile-ready')) {
+    profile = profile.replace(
+      'function ProfileScreen({ onTabChange, activeTab, puzzlePieces }) {\n  return (',
+      `function ProfileScreen({ onTabChange, activeTab, puzzlePieces }) {
+  const [viewerProfile, setViewerProfile] = React.useState({ username: 'EcoTale Explorer', joinedAt: new Date().toISOString() });
+  React.useEffect(() => {
+    function receiveProfile(event) {
+      if (event.origin !== window.location.origin || event.data?.type !== 'ecotale:profile') return;
+      const next = event.data.payload;
+      if (typeof next?.username === 'string' && typeof next?.joinedAt === 'string') setViewerProfile(next);
+    }
+    window.addEventListener('message', receiveProfile);
+    window.parent.postMessage({ type: 'ecotale:profile-ready' }, window.location.origin);
+    return () => window.removeEventListener('message', receiveProfile);
+  }, []);
+  const joinedLabel = new Date(viewerProfile.joinedAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  return (`
+    );
+    profile = profile.replace('>Alex Morgan</h2>', '>{viewerProfile.username}</h2>');
+    profile = profile.replace("Junior · UIUC '27 · Joined Sep 2025", 'Joined {joinedLabel}');
+  }
   profileEntry.compressed = true;
   profileEntry.data = zlib.gzipSync(Buffer.from(profile), { level: 9 }).toString('base64');
 }
@@ -326,8 +347,9 @@ if (!template.includes('ecotale-responsive-v2')) {
 }
 
 template = template.replaceAll('href="/task1-flow.css"', 'href="task1-flow.css"');
+template = template.replace(/href="task1-flow\.css(?:\?[^\"]*)?"/g, 'href="task1-flow.css?v=20260903-ui4"');
 if (!template.includes('task1-flow.css')) {
-  template = template.replace('</head>', '<link rel="stylesheet" href="task1-flow.css"></head>');
+  template = template.replace('</head>', '<link rel="stylesheet" href="task1-flow.css?v=20260903-ui4"></head>');
 }
 
 const safeManifest = JSON.stringify(manifest).replace(/<\/script/gi, '<\\u002Fscript');
