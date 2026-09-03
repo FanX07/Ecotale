@@ -5,7 +5,7 @@
   "description": "EcoTale mobile app shell",
   "scripts": {
     "dev": "vite",
-    "build": "node work/convert-prototype-to-native.mjs && vite build --base=./ && rm -rf dist/figma-task2/frames && mkdir -p dist/server && cp work/sites-worker.js dist/server/index.js",
+    "build": "node work/convert-prototype-to-native.mjs && vite build --base=./ && node work/flatten-prototype.mjs && rm -rf dist/figma-task2/frames && mkdir -p dist/server && cp work/sites-worker.js dist/server/index.js",
     "preview": "vite preview",
     "cap:add:ios": "cap add ios",
     "cap:add:android": "cap add android",
