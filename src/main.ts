@@ -3,7 +3,7 @@ import { supabase } from './lib/supabase';
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <main class="app-shell">
-    <iframe class="ecotale-app" src="${import.meta.env.BASE_URL}prototype.html?v=20260902-imagefix" title="EcoTale"></iframe>
+    <iframe class="ecotale-app" src="${import.meta.env.BASE_URL}prototype.html?v=20260903-mobilefix" title="EcoTale"></iframe>
     <section class="auth-gate" aria-live="polite">
       <form class="auth-card" id="auth-form">
         <p class="auth-kicker">ECOTALE</p>
