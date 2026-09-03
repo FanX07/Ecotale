@@ -11,22 +11,22 @@ if (!manifestMatch || !templateMatch) throw new Error('Prototype bundle data was
 const manifest = JSON.parse(manifestMatch[1]);
 
 // The original prototype stores all seeded image slots in a bundled JSON
-// resource.  On static hosts the runtime occasionally misses that resource
-// map and falls back to `.image-slots.state.json`, which GitHub Pages returns
-// as its HTML fallback.  Bake the state into the image-slot script as a data
-// URL instead, so every task image works without a companion server file.
+// resource. On static hosts the runtime misses that resource map and falls
+// back to a non-existent sidecar. Generate an ordinary public JSON sidecar
+// during every build. This is more reliable on mobile Safari than a very long
+// data: URL embedded in JavaScript.
 const imageSlotsStateEntry = manifest['0d1fa546-8124-4bbf-a011-a3edecac1302'];
 const imageSlotsScriptEntry = manifest['44252422-0e0f-4f7a-b6e3-f475bf9caca6'];
 if (imageSlotsStateEntry && imageSlotsScriptEntry) {
   let imageSlotsState = Buffer.from(imageSlotsStateEntry.data, 'base64');
   if (imageSlotsStateEntry.compressed) imageSlotsState = zlib.gunzipSync(imageSlotsState);
-  const slotsDataUrl = `data:application/json;base64,${imageSlotsState.toString('base64')}`;
+  fs.writeFileSync(new URL('../public/image-slots.state.json', import.meta.url), imageSlotsState);
 
   let imageSlotsScript = Buffer.from(imageSlotsScriptEntry.data, 'base64');
   if (imageSlotsScriptEntry.compressed) imageSlotsScript = zlib.gunzipSync(imageSlotsScript);
   imageSlotsScript = Buffer.from(imageSlotsScript.toString('utf8').replace(
-    "const url = (window.__resources && window.__resources.imageSlotsState) || STATE_FILE;",
-    `const url = ${JSON.stringify(slotsDataUrl)};`
+    /const url = [^;]+;/,
+    'const url = "./image-slots.state.json?v=20260903";'
   ));
   imageSlotsScriptEntry.compressed = true;
   imageSlotsScriptEntry.data = zlib.gzipSync(imageSlotsScript, { level: 9 }).toString('base64');
