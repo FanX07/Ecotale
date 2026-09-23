@@ -211,13 +211,14 @@ function UploadSheet({ category, onClose, onFile }) {
 
 function PlantAnswer({ plant, image, initialAnswer, onBack, onSave }) {
   const [answer, setAnswer] = React.useState(initialAnswer || '');
+  const canSave = answer.trim().length > 0;
   return (
     <Task1Page step="plant-answer" title="Plant Hunt" onBack={onBack} className="task1-answer-page">
       <img className="task1-answer-photo" src={image} alt={plant.uploadLabel} />
       <h2 className="task1-answer-question">Pick a plant. How does it support the life around it?</h2>
       <p className="task1-answer-helper">Think about what this plant provides for pollinators, birds, or other plants and animals.</p>
       <textarea value={answer} onChange={event => setAnswer(event.target.value)} placeholder="Write your observation..." aria-label="How this plant supports life" />
-      <button className="task1-answer-save" onClick={() => onSave(answer)}>Save answer</button>
+      <button className="task1-answer-save" onClick={() => onSave(answer)} disabled={!canSave}>Save answer</button>
     </Task1Page>
   );
 }
@@ -647,7 +648,17 @@ function Task1Flow({ task, onBack, onComplete }) {
   const previous = () => step === 0 ? onBack() : setStep(value => value - 1);
   const next = () => setStep(value => value + 1);
   const saveAnswer = answer => {
+    if (answerIndex === null || !answer.trim() || !uploads[answerIndex]) return;
+    const plant = TASK1_PLANTS[answerIndex];
     setAnswers(current => current.map((item, index) => index === answerIndex ? answer : item));
+    emitTaskSubmission(1, 'plant-hunt', {
+      title: plant.name,
+      story: answer.trim(),
+      tag: plant.category,
+      image: uploads[answerIndex],
+      location: 'Idea Garden',
+      audience: 'Only me'
+    });
     setAnswerIndex(null);
   };
 

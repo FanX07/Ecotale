@@ -58,6 +58,13 @@ create table if not exists public.task_submissions (
 alter table public.task_submissions
   add column if not exists user_id uuid references auth.users(id) on delete set null;
 
+-- Task 1 submits one row for each plant photo and its written observation.
+alter table public.task_submissions
+  drop constraint if exists task_submissions_task_number_check;
+alter table public.task_submissions
+  add constraint task_submissions_task_number_check
+  check (task_number between 1 and 5);
+
 insert into storage.buckets (id, name, public)
 values ('observation-photos', 'observation-photos', false)
 on conflict (id) do nothing;
