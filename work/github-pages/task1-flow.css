@@ -225,7 +225,8 @@
   .task1-header { min-height: 140px; padding-top: max(68px, calc(env(safe-area-inset-top) + 20px)); }
   .task1-page-content { height: calc(100% - 140px); padding-bottom: 74px; }
   .task1-next { width: 56px; height: 56px; bottom: 18px; }
-  .task1-next span { font-size: 42px; }
+  /* The arrow is drawn by the pseudo-elements above; keep the text glyph hidden. */
+  .task1-next span { font-size: 0; }
   .task1-garden-hero { height: 154px; }
   .task1-garden-grid { gap: 11px 20px; }
   .task1-garden-grid img { height: 67px; }
