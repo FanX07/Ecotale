@@ -354,7 +354,7 @@ if (!template.includes('AI_INTEREST_OPTIONS')) {
         interest,
         unmatched: true, // ai-agent-official-resources
         title: 'Protect what caught your attention',
-        action: 'Learn what ' + interest + ' needs to thrive, then choose one small way to protect its food, water, shelter, or growing space this week.',
+        action: '',
         why: 'Turning a specific observation into one practical action makes conservation personal and easier to continue.'
       };
     });
@@ -381,7 +381,7 @@ if (!template.includes('AI_INTEREST_OPTIONS')) {
             <div className="ai-agent-advice-list">
               {recommendations.map((item, index) => <article key={item.interest}>
                 <span>{index + 1}</span>
-                <div><small>{item.interest}</small><h3>{item.title}</h3><p>{item.action}</p><em>{item.why}</em>
+                <div><small>{item.interest}</small><h3>{item.title}</h3>{item.action && <p>{item.action}</p>}<em>{item.why}</em>
                   {item.unmatched && <aside className="ai-agent-resource-note">
                     <strong>This topic is not yet recorded in EcoTale’s recommendation library.</strong>
                     <p>Try asking: “What can I do to protect {item.interest} in Illinois?” You can also search these official Illinois resources:</p>
@@ -477,7 +477,7 @@ if (!template.includes('ai-agent-custom-interest')) {
       return {
         interest,
         title: 'Protect what caught your attention',
-        action: 'Learn what ' + interest + ' needs to thrive, then choose one small way to protect its food, water, shelter, or growing space this week.',
+        action: '',
         why: 'Turning a specific observation into one practical action makes conservation personal and easier to continue.'
       };
     });`
@@ -655,10 +655,22 @@ if (!template.includes('ecotale-responsive-v2')) {
 }
 
 template = template.replaceAll('href="/task1-flow.css"', 'href="task1-flow.css"');
-template = template.replace(/href="task1-flow\.css(?:\?[^\"]*)?"/g, 'href="task1-flow.css?v=20261002-ai-guide"');
+template = template.replace(/href="task1-flow\.css(?:\?[^\"]*)?"/g, 'href="task1-flow.css?v=20261002-ai-fallback"');
 if (!template.includes('task1-flow.css')) {
-  template = template.replace('</head>', '<link rel="stylesheet" href="task1-flow.css?v=20261002-ai-guide"></head>');
+  template = template.replace('</head>', '<link rel="stylesheet" href="task1-flow.css?v=20261002-ai-fallback"></head>');
 }
+
+// Unmatched interests can be places, activities, or cultural topics—not only
+// living things. Keep their fallback guidance neutral and omit the old
+// biology-specific sentence from previously generated prototypes.
+template = template.replaceAll(
+  "action: 'Learn what ' + interest + ' needs to thrive, then choose one small way to protect its food, water, shelter, or growing space this week.',",
+  "action: '',"
+);
+template = template.replaceAll(
+  '<div><small>{item.interest}</small><h3>{item.title}</h3><p>{item.action}</p><em>{item.why}</em>',
+  '<div><small>{item.interest}</small><h3>{item.title}</h3>{item.action && <p>{item.action}</p>}<em>{item.why}</em>'
+);
 
 const safeManifest = JSON.stringify(manifest).replace(/<\/script/gi, '<\\u002Fscript');
 const safeTemplate = JSON.stringify(template).replace(/<\/script/gi, '<\\u002Fscript');
