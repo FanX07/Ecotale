@@ -39,8 +39,8 @@ create table if not exists public.posts (
   created_at timestamptz not null default now()
 );
 
--- Anonymous task submissions from the public EcoTale web experience.
--- Visitors may add rows, but only project administrators can read them.
+-- Task submissions from the signed-in EcoTale web experience.
+-- People can read their own submissions and entries deliberately marked Public.
 create table if not exists public.task_submissions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete set null,
@@ -92,8 +92,20 @@ drop policy if exists "Visitors submit EcoTale task responses" on public.task_su
 drop policy if exists "Signed-in users submit EcoTale task responses" on public.task_submissions;
 create policy "Signed-in users submit EcoTale task responses" on public.task_submissions
   for insert to authenticated with check ((select auth.uid()) = user_id);
+drop policy if exists "Users read public or own EcoTale task responses" on public.task_submissions;
+create policy "Users read public or own EcoTale task responses" on public.task_submissions
+  for select to authenticated using (audience = 'Public' or user_id = (select auth.uid()));
 create policy "Users upload their own observation photos" on storage.objects for insert to authenticated with check (bucket_id = 'observation-photos' and (storage.foldername(name))[1] = (select auth.uid()::text));
 create policy "Users view their own observation photos" on storage.objects for select to authenticated using (bucket_id = 'observation-photos' and (storage.foldername(name))[1] = (select auth.uid()::text));
 drop policy if exists "Visitors upload EcoTale task photos" on storage.objects;
 create policy "Visitors upload EcoTale task photos" on storage.objects
   for insert to anon, authenticated with check (bucket_id = 'task-submission-photos');
+drop policy if exists "Signed-in users view public task photos" on storage.objects;
+create policy "Signed-in users view public task photos" on storage.objects
+  for select to authenticated using (
+    bucket_id = 'task-submission-photos'
+    and exists (
+      select 1 from public.task_submissions
+      where photo_path = name and audience = 'Public'
+    )
+  );

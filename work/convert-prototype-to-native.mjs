@@ -230,6 +230,64 @@ if (profileEntry) {
       <TabBar active={activeTab}`
     );
   }
+  if (!profile.includes('ecotale:community-feed')) {
+    profile = profile.replace(
+      /function CommunityScreen\([\s\S]*?\n}\n\n\/\/ ═+\n\/\/ PROFILE/,
+      `function CommunityScreen({ onTabChange, activeTab }) {
+  const [entries, setEntries] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [taskFilter, setTaskFilter] = React.useState('All');
+
+  React.useEffect(() => {
+    function receiveFeed(event) {
+      if (event.origin !== window.location.origin || event.data?.type !== 'ecotale:community-feed') return;
+      setEntries(Array.isArray(event.data.payload) ? event.data.payload : []);
+      setLoading(false);
+    }
+    window.addEventListener('message', receiveFeed);
+    window.parent.postMessage({ type: 'ecotale:community-ready' }, window.location.origin);
+    return () => window.removeEventListener('message', receiveFeed);
+  }, []);
+
+  const visible = entries.filter(entry => taskFilter === 'All' || entry.taskNumber === Number(taskFilter));
+  const filters = ['All', '1', '2', '3', '4', '5'];
+
+  return (
+    <div style={{ width: '100%', height: '100%', position: 'relative', background: COLORS.bg, overflow: 'hidden' }}>
+      <StatusBar />
+      <div style={{ height: 'calc(100% - 54px)', overflowY: 'auto', paddingBottom: 100 }}>
+        <div style={{ textAlign: 'center', padding: '4px 0 8px' }}>
+          <div style={{ fontFamily: '-apple-system, system-ui', fontSize: 16, fontWeight: 600, color: COLORS.ink }}>Community</div>
+          <div style={{ fontFamily: '-apple-system, system-ui', fontSize: 12, color: COLORS.ink2, marginTop: 4 }}>Public stories from EcoTale explorers</div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, padding: '12px 20px 6px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+          {filters.map(filter => <button key={filter} onClick={() => setTaskFilter(filter)} style={{ flexShrink: 0, padding: '8px 13px', borderRadius: 999, border: taskFilter === filter ? '1.5px solid ' + COLORS.green : '1.5px solid #ECECE6', background: taskFilter === filter ? COLORS.greenSoft : '#fff', color: COLORS.ink, fontFamily: '-apple-system, system-ui', fontSize: 13, fontWeight: 650, cursor: 'pointer' }}>{filter === 'All' ? 'All' : 'Task ' + filter}</button>)}
+        </div>
+        <div style={{ padding: '4px 24px' }}>
+          {loading && <div style={{ padding: '38px 0', textAlign: 'center', color: COLORS.ink2, fontFamily: '-apple-system, system-ui' }}>Loading community stories…</div>}
+          {!loading && visible.length === 0 && <div style={{ padding: '38px 0', textAlign: 'center', color: COLORS.ink2, fontFamily: '-apple-system, system-ui', lineHeight: 1.45 }}>No public stories yet. Complete a task and choose Public to share it here.</div>}
+          {visible.map((entry, index) => <article key={entry.id} style={{ padding: '18px 0', borderBottom: index < visible.length - 1 ? '1px solid #ECECE6' : 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
+              <span style={{ fontFamily: '-apple-system, system-ui', fontSize: 13, color: COLORS.greenDeep, fontWeight: 700 }}>Task {entry.taskNumber} · {entry.kind}</span>
+              <span style={{ fontFamily: '-apple-system, system-ui', fontSize: 12, color: COLORS.ink2 }}>{new Date(entry.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+            </div>
+            <div style={{ fontFamily: '-apple-system, system-ui', fontSize: 13, color: COLORS.ink2, marginBottom: 7 }}>Shared by {entry.author}{entry.location ? ' · ' + entry.location : ''}</div>
+            <h3 style={{ fontFamily: '"Source Serif Pro", Georgia, serif', fontSize: 21, lineHeight: 1.15, fontWeight: 500, color: COLORS.ink, margin: '0 0 7px' }}>{entry.title}</h3>
+            <p style={{ fontFamily: '-apple-system, system-ui', fontSize: 15, lineHeight: 1.45, color: COLORS.ink, margin: 0 }}>{entry.story}</p>
+            {entry.tag && <div style={{ display: 'inline-block', marginTop: 10, padding: '5px 9px', borderRadius: 999, background: '#EFF6EC', color: COLORS.greenDeep, fontFamily: '-apple-system, system-ui', fontSize: 12, fontWeight: 650 }}>{entry.tag}</div>}
+            {entry.imageUrl && <img src={entry.imageUrl} alt="Submitted with this story" style={{ width: '100%', height: 176, objectFit: 'cover', borderRadius: 14, marginTop: 12, display: 'block', background: '#E9E9E2' }} />}
+          </article>)}
+        </div>
+      </div>
+      <TabBar active={activeTab} onChange={onTabChange} />
+      <HomeIndicator />
+    </div>);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// PROFILE`
+    );
+  }
   profileEntry.compressed = true;
   profileEntry.data = zlib.gzipSync(Buffer.from(profile), { level: 9 }).toString('base64');
 }
@@ -301,6 +359,55 @@ if (!template.includes('TASK_ENTRY_PASSWORDS')) {
   template = template.replace(
     '        {showAdd && <AddSightingScreen onClose={() => setShowAdd(false)} onLogged={() => { setShowAdd(false); setPieces(p => Math.min(5, p + 1)); }}/>}\n      </PhoneFrame>',
     `        {showAdd && <AddSightingScreen onClose={() => setShowAdd(false)} onLogged={() => { setShowAdd(false); setPieces(p => Math.min(5, p + 1)); }}/>}\n        {passwordTask && <TaskPasswordDialog\n          task={passwordTask}\n          onCancel={() => setPasswordTask(null)}\n          onUnlock={() => { const task = passwordTask; setPasswordTask(null); setActiveTask(task); setScreen('task'); }}\n        />}\n      </PhoneFrame>`
+  );
+}
+
+// Keep earned puzzle progress in browser storage, scoped to the signed-in
+// Supabase user. Mobile browsers may unload an iframe while the app is in the
+// background, so React state alone is not a reliable progress store.
+if (!template.includes('ecotale:progress-state')) {
+  template = template.replace(
+    "    const [showAdd, setShowAdd] = React.useState(false);",
+    `    const [showAdd, setShowAdd] = React.useState(false);
+    const [progressOwner, setProgressOwner] = React.useState(null);
+    const [progressLoaded, setProgressLoaded] = React.useState(false);
+
+    React.useEffect(() => {
+      function receiveProfile(event) {
+        if (event.origin !== window.location.origin || event.data?.type !== 'ecotale:profile') return;
+        const next = event.data.payload;
+        if (typeof next?.userId === 'string') setProgressOwner(next.userId);
+      }
+      window.addEventListener('message', receiveProfile);
+      window.parent.postMessage({ type: 'ecotale:profile-ready' }, window.location.origin);
+      return () => window.removeEventListener('message', receiveProfile);
+    }, []);
+
+    React.useEffect(() => {
+      if (!progressOwner) return;
+      const key = 'ecotale:progress-state:' + progressOwner;
+      try {
+        const saved = JSON.parse(window.localStorage.getItem(key) || 'null');
+        if (saved && typeof saved === 'object') {
+          setPieces(Number.isInteger(saved.pieces) ? Math.max(0, Math.min(5, saved.pieces)) : 0);
+          setCompletedTasks(Array.isArray(saved.completedTasks) ? saved.completedTasks.filter(Number.isInteger) : []);
+          setTaskCursor(Number.isInteger(saved.taskCursor) ? Math.max(0, Math.min(TASKS.length - 1, saved.taskCursor)) : 0);
+          const restoredTask = TASKS.find(task => task.idx === saved.activeTaskIdx) || null;
+          setActiveTask(restoredTask);
+          setScreen(saved.screen === 'task' && restoredTask ? 'task' : 'home');
+          setTab(saved.tab === 'explore' || saved.tab === 'community' || saved.tab === 'profile' ? saved.tab : 'home');
+        }
+      } catch {
+        // A malformed old cache should never prevent entering EcoTale.
+      }
+      setProgressLoaded(true);
+    }, [progressOwner]);
+
+    React.useEffect(() => {
+      if (!progressOwner || !progressLoaded) return;
+      const state = { pieces, completedTasks, taskCursor, screen, activeTaskIdx: activeTask?.idx || null, tab };
+      try { window.localStorage.setItem('ecotale:progress-state:' + progressOwner, JSON.stringify(state)); } catch {}
+    }, [progressOwner, progressLoaded, pieces, completedTasks, taskCursor, screen, activeTask, tab]);`
   );
 }
 // A new player starts with an empty puzzle board. Completion state is earned,
