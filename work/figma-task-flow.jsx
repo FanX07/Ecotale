@@ -657,7 +657,7 @@ function Task1Flow({ task, onBack, onComplete }) {
       tag: plant.category,
       image: uploads[answerIndex],
       location: 'Idea Garden',
-      audience: 'Only me'
+      audience: 'Public'
     });
     setAnswerIndex(null);
   };

@@ -250,7 +250,7 @@ if (profileEntry) {
   }, []);
 
   const visible = entries.filter(entry => taskFilter === 'All' || entry.taskNumber === Number(taskFilter));
-  const filters = ['All', '1', '2', '3', '4', '5'];
+  const filters = ['All', '1', '3', '4', '5'];
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative', background: COLORS.bg, overflow: 'hidden' }}>
