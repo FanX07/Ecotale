@@ -165,6 +165,50 @@ if (!screens.includes('const [taskCursor, setTaskCursor]')) {
   );
 }
 
+// Read the signed-in explorer's saved responses back into the dashboard.
+// The original prototype only knew about progress earned in this browser tab.
+if (!screens.includes('ecotale-history-sheet')) {
+  screens = screens.replace(
+    'function HomeScreen({ onOpenTask, onOpenNews, puzzlePieces, taskCursor = 0, onTabChange, activeTab }) {\n  const [taskIdx, setTaskIdx] = React.useState(taskCursor);',
+    'function HomeScreen({ onOpenTask, onOpenNews, puzzlePieces, completedTasks = [], personalSubmissions = [], onOpenHistory, taskCursor = 0, onTabChange, activeTab }) {\n  const [taskIdx, setTaskIdx] = React.useState(taskCursor);'
+  );
+  screens = screens.replace(
+    '  const task = TASKS[taskIdx];',
+    '  const task = TASKS[taskIdx];\n  const historyTasks = new Set(personalSubmissions.map(entry => entry.taskNumber));'
+  );
+  screens = screens.replace(
+    'const filled = i < puzzlePieces;',
+    'const pieceTask = TASKS[i];\n              const filled = completedTasks.includes(pieceTask.idx) || historyTasks.has(pieceTask.idx);'
+  );
+  screens = screens.replace(
+    '<div key={i} style={{\n                  filter: filled ? `drop-shadow(0 0 10px ${COLORS.blue})` : \'none\',',
+    '<button key={i} type="button" onClick={() => filled && onOpenHistory(pieceTask.idx)} aria-label={filled ? \'View Task \' + pieceTask.idx + \' answers\' : \'Task \' + pieceTask.idx + \' not completed\'} disabled={!filled} style={{ border: 0, padding: 0, background: \'transparent\', cursor: filled ? \'pointer\' : \'default\', filter: filled ? `drop-shadow(0 0 10px ${COLORS.blue})` : \'none\','
+  );
+  screens = screens.replace('</div>);\n\n            })}', '</button>);\n\n            })}');
+  screens = screens.replace(
+    '// ═══════════════════════════════════════════════════════════════════════\n// TASK FLOW',
+    `function PersonalHistorySheet({ taskNumber, entries, onClose }) {
+  const taskEntries = entries.filter(entry => entry.taskNumber === taskNumber);
+  return ReactDOM.createPortal(
+    <div className="ecotale-history-backdrop" onClick={onClose} role="presentation">
+      <section className="ecotale-history-sheet" onClick={event => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="ecotale-history-title">
+        <button type="button" className="ecotale-history-close" onClick={onClose} aria-label="Close history">×</button>
+        <p>YOUR ECOTALE RECORD</p><h2 id="ecotale-history-title">Task {taskNumber} answers</h2>
+        {taskEntries.length === 0 ? <div className="ecotale-history-empty">This task was completed on this device, but no saved response was found yet.</div> : taskEntries.map(entry => <article key={entry.id} className="ecotale-history-entry">
+          <small>{new Date(entry.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}{entry.location ? ' · ' + entry.location : ''}</small>
+          <h3>{entry.title}</h3><p>{entry.story}</p>{entry.tag && <span>{entry.tag}</span>}
+          {entry.imageUrl && <img src={entry.imageUrl} alt={'Your submission: ' + entry.title} />}
+        </article>)}
+      </section>
+    </div>, document.body
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// TASK FLOW`
+  );
+}
+
 // Profile list rows navigate forward; the original icon was a left-facing back arrow.
 if (!screens.includes('profile-right-arrows')) {
   screens = screens.replace(
@@ -626,6 +670,59 @@ if (!template.includes('ecotale:progress-state')) {
       const state = { pieces, completedTasks, taskCursor, screen, activeTaskIdx: activeTask?.idx || null, tab };
       try { window.localStorage.setItem('ecotale:progress-state:' + progressOwner, JSON.stringify(state)); } catch {}
     }, [progressOwner, progressLoaded, pieces, completedTasks, taskCursor, screen, activeTask, tab]);`
+  );
+}
+// Merge the signed-in explorer's saved Supabase submissions into local puzzle
+// state and make every earned piece open its own private answer history.
+if (!template.includes('ecotale:personal-submissions')) {
+  template = template.replace(
+    '    const [progressLoaded, setProgressLoaded] = React.useState(false);',
+    `    const [progressLoaded, setProgressLoaded] = React.useState(false);
+    const [personalSubmissions, setPersonalSubmissions] = React.useState([]);
+    const [historyTask, setHistoryTask] = React.useState(null);
+
+    React.useEffect(() => {
+      function receivePersonalSubmissions(event) {
+        if (event.origin !== window.location.origin || event.data?.type !== 'ecotale:personal-submissions') return;
+        const entries = Array.isArray(event.data.payload) ? event.data.payload.filter(entry => entry && [1, 3, 4, 5].includes(entry.taskNumber)) : [];
+        setPersonalSubmissions(entries);
+        const savedTaskNumbers = [...new Set(entries.map(entry => entry.taskNumber))];
+        if (savedTaskNumbers.length) {
+          setCompletedTasks(current => [...new Set([...current, ...savedTaskNumbers])].sort((a, b) => a - b));
+          setPieces(current => Math.max(current, savedTaskNumbers.length));
+        }
+      }
+      window.addEventListener('message', receivePersonalSubmissions);
+      window.parent.postMessage({ type: 'ecotale:profile-ready' }, window.location.origin);
+      return () => window.removeEventListener('message', receivePersonalSubmissions);
+    }, []);`
+  );
+  template = template.replace(
+    '        puzzlePieces={pieces}\n        taskCursor={taskCursor}\n        activeTab={tab}',
+    '        puzzlePieces={pieces}\n        completedTasks={completedTasks}\n        personalSubmissions={personalSubmissions}\n        onOpenHistory={setHistoryTask}\n        taskCursor={taskCursor}\n        activeTab={tab}'
+  );
+  template = template.replace(
+    '        {showAdd && <AddSightingScreen',
+    '        {historyTask && <PersonalHistorySheet taskNumber={historyTask} entries={personalSubmissions} onClose={() => setHistoryTask(null)} />}\n        {showAdd && <AddSightingScreen'
+  );
+}
+if (!template.includes('ecotale-history-styles')) {
+  template = template.replace(
+    '</head>',
+    `<style id="ecotale-history-styles">
+      .ecotale-history-backdrop { position: fixed; z-index: 10000; inset: 0; display: flex; align-items: flex-end; background: rgba(17,31,18,.45); backdrop-filter: blur(4px); }
+      .ecotale-history-sheet { position: relative; width: 100%; max-height: min(82dvh, 720px); overflow-y: auto; padding: 28px 24px calc(30px + env(safe-area-inset-bottom)); border-radius: 28px 28px 0 0; background: #fbfbf8; box-shadow: 0 -18px 44px rgba(0,0,0,.16); }
+      .ecotale-history-sheet > p { margin: 0 0 6px; color: #4a9a4a; font: 800 11px -apple-system, system-ui; letter-spacing: .14em; }
+      .ecotale-history-sheet h2 { margin: 0 42px 22px 0; color: #182018; font: 500 28px/1.15 Georgia, serif; }
+      .ecotale-history-close { position: absolute; top: 18px; right: 20px; width: 38px; height: 38px; border: 0; border-radius: 50%; background: #e8f3e5; color: #2f7138; font: 28px/1 -apple-system, system-ui; cursor: pointer; }
+      .ecotale-history-entry { padding: 17px 0; border-top: 1px solid #e5e7e1; }
+      .ecotale-history-entry small { color: #5a5f62; font: 13px -apple-system, system-ui; }
+      .ecotale-history-entry h3 { margin: 7px 0 6px; color: #182018; font: 500 22px/1.15 Georgia, serif; }
+      .ecotale-history-entry p { margin: 0; color: #263127; font: 15px/1.45 -apple-system, system-ui; white-space: pre-wrap; }
+      .ecotale-history-entry span { display: inline-block; margin-top: 10px; padding: 5px 9px; border-radius: 999px; background: #eff6ec; color: #2f7138; font: 650 12px -apple-system, system-ui; }
+      .ecotale-history-entry img { display: block; width: 100%; max-height: 240px; margin-top: 12px; object-fit: cover; border-radius: 14px; background: #e9e9e2; }
+      .ecotale-history-empty { padding: 22px 0; color: #5a5f62; font: 15px/1.45 -apple-system, system-ui; }
+    </style></head>`
   );
 }
 // A new player starts with an empty puzzle board. Completion state is earned,

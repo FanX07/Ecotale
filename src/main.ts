@@ -53,6 +53,7 @@ function profileFromUser(user: { id: string; email?: string; created_at?: string
 function sendProfile() {
   if (!currentProfile) return;
   appFrame?.contentWindow?.postMessage({ type: 'ecotale:profile', payload: currentProfile }, window.location.origin);
+  void sendPersonalSubmissions();
 }
 
 type CommunityEntry = {
@@ -67,6 +68,32 @@ type CommunityEntry = {
   createdAt: string;
   imageUrl: string | null;
 };
+
+async function sendPersonalSubmissions() {
+  if (!supabase || !currentUserId) return;
+  const { data: submissions, error } = await supabase
+    .from('task_submissions')
+    .select('id, task_number, kind, title, body, tag, location, photo_path, created_at')
+    .eq('user_id', currentUserId)
+    .in('task_number', [1, 3, 4, 5])
+    .order('created_at', { ascending: false })
+    .limit(100);
+  if (error || !submissions) return;
+
+  const history = await Promise.all(submissions.map(async item => {
+    let imageUrl: string | null = null;
+    if (item.photo_path) {
+      const { data } = await supabase.storage.from('task-submission-photos').createSignedUrl(item.photo_path, 60 * 60);
+      imageUrl = data?.signedUrl ?? null;
+    }
+    return {
+      id: item.id, taskNumber: item.task_number, kind: item.kind, title: item.title,
+      story: item.body, tag: item.tag || '', location: item.location || '',
+      author: currentProfile?.username || 'EcoTale Explorer', createdAt: item.created_at, imageUrl
+    };
+  }));
+  appFrame?.contentWindow?.postMessage({ type: 'ecotale:personal-submissions', payload: history }, window.location.origin);
+}
 
 async function sendCommunityFeed() {
   if (!supabase || !currentUserId) return;
@@ -302,6 +329,7 @@ async function storeTaskSubmission(submission: TaskSubmission) {
     audience: submission.audience === 'Only me' ? 'Only me' : 'Public',
     photo_path: photoPath
   });
+  void sendPersonalSubmissions();
 }
 
 window.addEventListener('message', event => {
