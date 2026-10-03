@@ -362,6 +362,224 @@ if (!template.includes('TASK_ENTRY_PASSWORDS')) {
   );
 }
 
+// A lightweight, preset-backed AI guide lives in the home shell. The UI and
+// data shape are ready for a server-side model call later; for now every
+// recommendation is deterministic so the public prototype has no API cost or
+// exposed secret. It becomes proactive after all five tasks are complete.
+if (!template.includes('AI_INTEREST_OPTIONS')) {
+  template = template.replace(
+    '  function PhoneApp({ initialScreen = \'welcome\', label }) {',
+    `  const AI_INTEREST_OPTIONS = [
+    'Coneflower', 'Japan House', 'Rose Garden', 'Trees', 'Native plants',
+    'Native insects', 'Butterflies', 'Pollinators', 'Birds', 'Garden design',
+    'Cultural landscapes', 'Water conservation'
+  ];
+
+  const AI_PRESET_ADVICE = {
+    'Coneflower': { title: 'Support coneflowers and their visitors', action: 'Find a sunny place for a native coneflower, or help care for one already growing nearby.', why: 'Its nectar supports pollinators, and its seeds feed birds later in the season.' },
+    'Japan House': { title: 'Notice where culture and nature meet', action: 'Visit another culturally meaningful landscape and record one design choice that helps people notice nature.', why: 'Careful observation can inspire landscapes that respect both community stories and local ecology.' },
+    'Rose Garden': { title: 'Add native blooms to a flower garden', action: 'Identify one native flowering species that could complement roses and bloom at a different time of year.', why: 'A longer flowering season gives bees, butterflies, and other insects a steadier food source.' },
+    'Trees': { title: 'Protect the trees around you', action: 'Choose one neighborhood tree to observe this month and keep mulch and damage away from its trunk.', why: 'Healthy trees provide shade, nesting space, food, and long-term habitat.' },
+    'Native plants': { title: 'Grow one plant that belongs here', action: 'Choose one Illinois native plant for a yard, balcony pot, school, or community garden.', why: 'Native plants are adapted to local conditions and support the wildlife that evolved alongside them.' },
+    'Native insects': { title: 'Make a small refuge for insects', action: 'Leave a small patch of stems, leaves, or bare soil undisturbed instead of tidying every corner.', why: 'Many beneficial native insects need these quiet spaces to nest or overwinter.' },
+    'Butterflies': { title: 'Create a butterfly stopover', action: 'Find one native host plant and one nectar plant that could grow near your home or school.', why: 'Butterflies need food for adults and the right host plants for their caterpillars.' },
+    'Pollinators': { title: 'Offer blooms across the seasons', action: 'Look for a gap in spring, summer, or fall flowers near you, then identify a native plant that can fill it.', why: 'Overlapping bloom times help pollinators find food throughout their active season.' },
+    'Birds': { title: 'Support birds with habitat', action: 'Add or protect a native shrub, seed-bearing flower, or clean water source where you live.', why: 'Birds need food, water, and cover—not only feeders—to thrive.' },
+    'Garden design': { title: 'Design a layered habitat', action: 'Sketch a small space using three layers: a tree or tall plant, a shrub, and low flowers or grasses.', why: 'Layered planting creates more shelter and feeding opportunities in the same area.' },
+    'Cultural landscapes': { title: 'Learn the story of a landscape', action: 'Ask someone or research how one local landscape reflects a community tradition, memory, or value.', why: 'Understanding cultural meaning can make stewardship more respectful and lasting.' },
+    'Water conservation': { title: 'Keep rain where plants can use it', action: 'Choose one action this week: water early, collect rainwater, or direct runoff toward planted soil.', why: 'Slowing and reusing water reduces waste and helps plants through dry periods.' }
+  };
+
+  function EcoTaleAIAgent({ completedCount, onClose }) { // ai-agent-always-available
+    const [selected, setSelected] = React.useState([]);
+    const [showAdvice, setShowAdvice] = React.useState(false);
+    const [customInterest, setCustomInterest] = React.useState(''); // ai-agent-custom-interest
+
+    function toggleInterest(interest) {
+      setSelected(current => current.includes(interest) ? current.filter(item => item !== interest) : [...current, interest]);
+      setShowAdvice(false);
+    }
+
+    const specificInterest = customInterest.trim();
+    const recommendationInterests = [
+      ...(specificInterest ? [specificInterest] : []),
+      ...selected.filter(interest => interest.toLowerCase() !== specificInterest.toLowerCase())
+    ].slice(0, 3);
+    const recommendations = recommendationInterests.map(interest => {
+      const presetKey = Object.keys(AI_PRESET_ADVICE).find(key => interest.toLowerCase().includes(key.toLowerCase()));
+      if (presetKey) return { interest, ...AI_PRESET_ADVICE[presetKey] };
+      return {
+        interest,
+        unmatched: true, // ai-agent-official-resources
+        title: 'Protect what caught your attention',
+        action: '',
+        why: 'Turning a specific observation into one practical action makes conservation personal and easier to continue.'
+      };
+    });
+
+    return ReactDOM.createPortal(
+      <div className="ai-agent-backdrop" onClick={onClose} role="presentation">
+        <section className="ai-agent-card" onClick={event => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="ai-agent-title">
+          <button className="ai-agent-close" type="button" onClick={onClose} aria-label="Close EcoTale AI guide">×</button>
+          <div className="ai-agent-mark" aria-hidden="true"><span>✦</span></div>
+          <p className="ai-agent-kicker">ECOTALE AI GUIDE</p>
+          {!showAdvice ? <>
+            <h2 id="ai-agent-title">What did you enjoy most?</h2>
+            <p className="ai-agent-intro">{completedCount >= 5 ? 'You completed all five tasks. Choose what stood out to you, and I’ll suggest how to continue.' : 'You can talk with me anytime. Choose one or more interests, and I’ll suggest a few ways to protect what you enjoy.'}</p>
+            <div className="ai-agent-mini-progress"><span>{completedCount}/5 tasks complete</span><i style={{ width: (completedCount / 5 * 100) + '%' }} /></div>
+            <div className="ai-agent-options">
+              {AI_INTEREST_OPTIONS.map(interest => <button type="button" key={interest} className={selected.includes(interest) ? 'selected' : ''} onClick={() => toggleInterest(interest)} aria-pressed={selected.includes(interest)}>{interest}</button>)}
+            </div>
+            <label className="ai-agent-custom-label" htmlFor="ai-agent-custom-interest">Something more specific</label>
+            <input id="ai-agent-custom-interest" className="ai-agent-custom-input" value={customInterest} onChange={event => { setCustomInterest(event.target.value); setShowAdvice(false); }} placeholder="e.g. the redbud near Japan House" />
+            <button className="ai-agent-primary" type="button" disabled={!selected.length && !customInterest.trim()} onClick={() => setShowAdvice(true)}>Show my actions</button>
+          </> : <>
+            <h2 id="ai-agent-title">Your next actions</h2>
+            <p className="ai-agent-intro">Based on what you liked, here are some ways to continue your EcoTale.</p>
+            <div className="ai-agent-advice-list">
+              {recommendations.map((item, index) => <article key={item.interest}>
+                <span>{index + 1}</span>
+                <div><small>{item.interest}</small><h3>{item.title}</h3>{item.action && <p>{item.action}</p>}<em>{item.why}</em>
+                  {item.unmatched && <aside className="ai-agent-resource-note">
+                    <strong>This topic is not yet recorded in EcoTale’s recommendation library.</strong>
+                    <p>Try asking: “What can I do to protect {item.interest} in Illinois?” You can also search these official Illinois resources:</p>
+                    <nav>
+                      <a href="https://dnr.illinois.gov/education/pollinatormain/pollinatornativeplants.html" target="_blank" rel="noreferrer">IDNR Native Plants</a>
+                      <a href="https://naturalheritage.illinois.gov/speciesconservation.html" target="_blank" rel="noreferrer">Species Conservation</a>
+                      <a href="https://epa.illinois.gov/" target="_blank" rel="noreferrer">Illinois EPA</a>
+                    </nav>
+                  </aside>}
+                </div>
+              </article>)}
+            </div>
+            <button className="ai-agent-secondary" type="button" onClick={() => setShowAdvice(false)}>Change interests</button>
+            <button className="ai-agent-primary" type="button" onClick={onClose}>I’ll try one</button>
+          </>}
+        </section>
+      </div>,
+      document.body
+    );
+  }
+
+  function PhoneApp({ initialScreen = 'welcome', label }) {`
+  );
+  template = template.replace(
+    '    const [showAdd, setShowAdd] = React.useState(false);',
+    `    const [showAdd, setShowAdd] = React.useState(false);
+    const [aiAgentOpen, setAiAgentOpen] = React.useState(false);
+    const [aiAutoOpened, setAiAutoOpened] = React.useState(false);
+
+    React.useEffect(() => {
+      if (screen !== 'home' || completedTasks.length < TASKS.length || aiAutoOpened) return;
+      const timer = window.setTimeout(() => {
+        setAiAgentOpen(true);
+        setAiAutoOpened(true);
+      }, 500);
+      return () => window.clearTimeout(timer);
+    }, [screen, completedTasks.length, aiAutoOpened]);`
+  );
+  template = template.replace(
+    '        {activeSpecies && <SpeciesSheet s={activeSpecies} onClose={() => setActiveSpecies(null)}/>}',
+    `        {screen === 'home' && <button type="button" className="ai-agent-fab" onClick={() => setAiAgentOpen(true)} aria-label="Open EcoTale AI guide"><span>✦</span><small>AI</small></button>}
+        {aiAgentOpen && <EcoTaleAIAgent completedCount={completedTasks.length} onClose={() => setAiAgentOpen(false)} />}
+        {activeSpecies && <SpeciesSheet s={activeSpecies} onClose={() => setActiveSpecies(null)}/>} `
+  );
+}
+// Migrate the initial locked version of the guide already embedded in older
+// generated prototypes. The floating entry stays usable throughout the visit;
+// only the proactive opening waits for five completed tasks.
+if (!template.includes('ai-agent-always-available')) {
+  template = template.replace(
+    'function EcoTaleAIAgent({ unlocked, completedCount, onClose }) {',
+    'function EcoTaleAIAgent({ completedCount, onClose }) { // ai-agent-always-available'
+  );
+  template = template.replace(
+    `          {!unlocked ? <>
+            <h2 id="ai-agent-title">Your guide is growing</h2>
+            <p className="ai-agent-intro">Complete all five EcoTale tasks to unlock personalized actions based on what you enjoyed.</p>
+            <div className="ai-agent-progress"><span style={{ width: (completedCount / 5 * 100) + '%' }} /></div>
+            <strong className="ai-agent-progress-label">{completedCount} of 5 tasks complete</strong>
+            <button className="ai-agent-primary" type="button" onClick={onClose}>Keep exploring</button>
+          </> : !showAdvice ? <>
+            <h2 id="ai-agent-title">What did you enjoy most?</h2>
+            <p className="ai-agent-intro">Choose one or more interests. I’ll suggest a few ways to keep protecting what stood out to you.</p>`,
+    `          {!showAdvice ? <>
+            <h2 id="ai-agent-title">What did you enjoy most?</h2>
+            <p className="ai-agent-intro">{completedCount >= 5 ? 'You completed all five tasks. Choose what stood out to you, and I’ll suggest how to continue.' : 'You can talk with me anytime. Choose one or more interests, and I’ll suggest a few ways to protect what you enjoy.'}</p>
+            <div className="ai-agent-mini-progress"><span>{completedCount}/5 tasks complete</span><i style={{ width: (completedCount / 5 * 100) + '%' }} /></div>`
+  );
+  template = template.replace(
+    'Based on what you liked, here are three ways to continue your EcoTale.',
+    'Based on what you liked, here are some ways to continue your EcoTale.'
+  );
+  template = template.replace(
+    '<EcoTaleAIAgent unlocked={completedTasks.length >= TASKS.length} completedCount={completedTasks.length}',
+    '<EcoTaleAIAgent completedCount={completedTasks.length}'
+  );
+}
+if (!template.includes('ai-agent-custom-interest')) {
+  template = template.replace(
+    "    const [showAdvice, setShowAdvice] = React.useState(false);",
+    "    const [showAdvice, setShowAdvice] = React.useState(false);\n    const [customInterest, setCustomInterest] = React.useState(''); // ai-agent-custom-interest"
+  );
+  template = template.replace(
+    "    const recommendations = selected.slice(0, 3).map(interest => ({ interest, ...AI_PRESET_ADVICE[interest] }));",
+    `    const specificInterest = customInterest.trim();
+    const recommendationInterests = [
+      ...(specificInterest ? [specificInterest] : []),
+      ...selected.filter(interest => interest.toLowerCase() !== specificInterest.toLowerCase())
+    ].slice(0, 3);
+    const recommendations = recommendationInterests.map(interest => {
+      const presetKey = Object.keys(AI_PRESET_ADVICE).find(key => interest.toLowerCase().includes(key.toLowerCase()));
+      if (presetKey) return { interest, ...AI_PRESET_ADVICE[presetKey] };
+      return {
+        interest,
+        title: 'Protect what caught your attention',
+        action: '',
+        why: 'Turning a specific observation into one practical action makes conservation personal and easier to continue.'
+      };
+    });`
+  );
+  template = template.replace(
+    `            </div>
+            <button className="ai-agent-primary" type="button" disabled={!selected.length} onClick={() => setShowAdvice(true)}>Show my actions</button>`,
+    `            </div>
+            <label className="ai-agent-custom-label" htmlFor="ai-agent-custom-interest">Something more specific</label>
+            <input id="ai-agent-custom-interest" className="ai-agent-custom-input" value={customInterest} onChange={event => { setCustomInterest(event.target.value); setShowAdvice(false); }} placeholder="e.g. the redbud near Japan House" />
+            <button className="ai-agent-primary" type="button" disabled={!selected.length && !customInterest.trim()} onClick={() => setShowAdvice(true)}>Show my actions</button>`
+  );
+}
+if (!template.includes('ai-agent-official-resources')) {
+  template = template.replace(
+    `      return {
+        interest,
+        title: 'Protect what caught your attention',`,
+    `      return {
+        interest,
+        unmatched: true, // ai-agent-official-resources
+        title: 'Protect what caught your attention',`
+  );
+  template = template.replace(
+    '<div><small>{item.interest}</small><h3>{item.title}</h3><p>{item.action}</p><em>{item.why}</em></div>',
+    `<div><small>{item.interest}</small><h3>{item.title}</h3><p>{item.action}</p><em>{item.why}</em>
+                  {item.unmatched && <aside className="ai-agent-resource-note">
+                    <strong>This topic is not yet recorded in EcoTale’s recommendation library.</strong>
+                    <p>Try asking: “What can I do to protect {item.interest} in Illinois?” You can also search these official Illinois resources:</p>
+                    <nav>
+                      <a href="https://dnr.illinois.gov/education/pollinatormain/pollinatornativeplants.html" target="_blank" rel="noreferrer">IDNR Native Plants</a>
+                      <a href="https://naturalheritage.illinois.gov/speciesconservation.html" target="_blank" rel="noreferrer">Species Conservation</a>
+                      <a href="https://epa.illinois.gov/" target="_blank" rel="noreferrer">Illinois EPA</a>
+                    </nav>
+                  </aside>}
+                </div>`
+  );
+}
+// Repair builds produced by the first AI-guide injection, which missed the
+// closing JSX expression brace after SpeciesSheet.
+template = template.replace(
+  '{activeSpecies && <SpeciesSheet s={activeSpecies} onClose={() => setActiveSpecies(null)}/>\n        {showAdd',
+  '{activeSpecies && <SpeciesSheet s={activeSpecies} onClose={() => setActiveSpecies(null)}/>}\n        {showAdd'
+);
 // Keep earned puzzle progress in browser storage, scoped to the signed-in
 // Supabase user. Mobile browsers may unload an iframe while the app is in the
 // background, so React state alone is not a reliable progress store.
@@ -543,10 +761,22 @@ if (!template.includes('ecotale-responsive-v2')) {
 }
 
 template = template.replaceAll('href="/task1-flow.css"', 'href="task1-flow.css"');
-template = template.replace(/href="task1-flow\.css(?:\?[^\"]*)?"/g, 'href="task1-flow.css?v=20260903-ui6"');
+template = template.replace(/href="task1-flow\.css(?:\?[^\"]*)?"/g, 'href="task1-flow.css?v=20261002-ai-fallback"');
 if (!template.includes('task1-flow.css')) {
-  template = template.replace('</head>', '<link rel="stylesheet" href="task1-flow.css?v=20260903-ui6"></head>');
+  template = template.replace('</head>', '<link rel="stylesheet" href="task1-flow.css?v=20261002-ai-fallback"></head>');
 }
+
+// Unmatched interests can be places, activities, or cultural topics—not only
+// living things. Keep their fallback guidance neutral and omit the old
+// biology-specific sentence from previously generated prototypes.
+template = template.replaceAll(
+  "action: 'Learn what ' + interest + ' needs to thrive, then choose one small way to protect its food, water, shelter, or growing space this week.',",
+  "action: '',"
+);
+template = template.replaceAll(
+  '<div><small>{item.interest}</small><h3>{item.title}</h3><p>{item.action}</p><em>{item.why}</em>',
+  '<div><small>{item.interest}</small><h3>{item.title}</h3>{item.action && <p>{item.action}</p>}<em>{item.why}</em>'
+);
 
 const safeManifest = JSON.stringify(manifest).replace(/<\/script/gi, '<\\u002Fscript');
 const safeTemplate = JSON.stringify(template).replace(/<\/script/gi, '<\\u002Fscript');
