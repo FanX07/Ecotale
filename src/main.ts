@@ -75,7 +75,7 @@ async function sendPersonalSubmissions() {
     .from('task_submissions')
     .select('id, task_number, kind, title, body, tag, location, photo_path, created_at')
     .eq('user_id', currentUserId)
-    .in('task_number', [1, 3, 4, 5])
+    .in('task_number', [1, 2, 3, 4, 5])
     .order('created_at', { ascending: false })
     .limit(100);
   if (error || !submissions) return;

@@ -462,6 +462,16 @@ function Task2Flow({ task, onBack, onComplete }) {
   const [step, setStep] = React.useState(0);
   const next = () => setStep(value => value + 1);
   const previous = () => step === 0 ? onBack() : setStep(value => value - 1);
+  const finish = () => {
+    emitTaskSubmission(2, 'symbiosis', {
+      title: 'Symbiosis Exploration complete',
+      story: 'Completed the five ecological relationship challenges and the ecosystem protection activity.',
+      tag: 'Ecological relationships',
+      location: 'UIUC',
+      audience: 'Only me'
+    });
+    onComplete();
+  };
   if (step === 0) return <FigmaTaskIntro task={task} onBack={onBack} onStart={next} />;
   if (step === 1) return <Task2ImagePage title="Monarch & Milkweed" body="A classic example is the relationship between the Monarch butterfly and Milkweed." image={TASK2_ASSETS.milkweed} onBack={previous} onNext={next} className="task2-monarch-page" />;
   if (step === 2) return <Task2ImagePage title="Mutualism" body="Milkweed is the only food source for Monarch caterpillars. In return, Monarchs help pollinate Milkweed." image={TASK2_ASSETS.mutualism} onBack={previous} onNext={next} className="task2-mutualism-page" />;
@@ -473,7 +483,7 @@ function Task2Flow({ task, onBack, onComplete }) {
     return <Task2Quiz key={quizIndex} quiz={TASK2_QUIZZES[quizIndex]} index={quizIndex} feedbackMode={feedbackMode} onBack={previous} onNext={next} />;
   }
   if (step === 10) return <Task2FinalActions onBack={previous} onNext={next} />;
-  return <Task2Complete onBack={previous} onComplete={onComplete} />;
+  return <Task2Complete onBack={previous} onComplete={finish} />;
 }
 
 const TASK3_ASSETS = {

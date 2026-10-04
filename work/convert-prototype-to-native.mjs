@@ -743,6 +743,12 @@ if (!template.includes('ecotale:personal-submissions')) {
     '        {historyTask && <PersonalHistorySheet taskNumber={historyTask} entries={personalSubmissions} onClose={() => setHistoryTask(null)} />}\n        {showAdd && <AddSightingScreen'
   );
 }
+// Task 2 has a completion record rather than a photo response, but it still
+// counts as an earned puzzle piece and must be restored after a page reload.
+template = template.replace(
+  /\[1, 3, 4, 5\]\.includes\(entry\.taskNumber\)/g,
+  '[1, 2, 3, 4, 5].includes(entry.taskNumber)'
+);
 if (!template.includes('ecotale-history-styles')) {
   template = template.replace(
     '</head>',
