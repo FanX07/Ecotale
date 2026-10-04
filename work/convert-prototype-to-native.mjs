@@ -332,6 +332,43 @@ if (profileEntry) {
 // PROFILE`
     );
   }
+  if (!profile.includes('ecotale-event-screen')) {
+    profile = profile.replace(
+      /function ExploreScreen\([\s\S]*?\n}\n\n\/\/ ═+\n\/\/ SPECIES DETAIL/,
+      `function ExploreScreen({ onTabChange, activeTab }) {
+  const heroImage = new URL('event-assets/autumn-harvest.jpg', window.parent.location.href).href;
+  const events = [
+    ['OCT 10', 'Urbana Fall Fusion Festival', '3–7 PM · Downtown Urbana', 'Festival · Free', 'Pumpkins, fall displays, live art, and interactive activities from local community and nature organizations.', 'Notice an autumn texture or color, then share one sentence about it.', '50% 54%', 'https://40north.org/our_programs/urbana-fall-fusion-festival/'],
+    ['OCT 13', 'Halloween Fun Fest', '5–7 PM · Market Place Mall', 'Family · Free', 'A Champaign–Urbana Park District Halloween tradition with costumes and seasonal family activities.', 'Look for one natural material used in a fall decoration.', '72% 62%', 'https://champaignparks.org/events/2026-10/'],
+    ['OCT 17', 'Scarecrow Festival', 'AMBUCS Park · Urbana', 'Festival', 'A classic Urbana fall celebration with outdoor activities, rides, food, and harvest-season fun.', 'Find three plant-based materials that make a scarecrow possible.', '20% 68%', 'https://www.chambanamoms.com/2026/08/13/fall-fairs-festivals-champaign-urbana/'],
+    ['OCT 19–23', 'Pumpkin Hunt at the Illini Union', 'All day · Illini Union', 'Campus hunt · Free', 'Search public areas of the Illini Union for hidden pumpkins and redeem your finds on October 25.', 'Pair your pumpkin find with one seasonal clue you notice nearby.', '86% 34%', 'https://calendars.illinois.edu/detail/7937?eventId=33560807'],
+    ['THIS FALL', 'U-Pick Apples at Curtis Orchard', 'Champaign · Weather permitting', 'Orchard · U-Pick', 'Walk the orchard rows and pick seasonal apples; current varieties and timing are posted by the orchard.', 'Observe how fruit, insects, and trees connect in an orchard ecosystem.', '30% 36%', 'https://www.curtisorchard.com/apples'],
+    ['OCT 24–25', 'The Great Pumpkin Hollow', '1–6 PM · Champaign', 'Fall experience', 'An immersive weekend of pumpkins, lights, photo moments, food, and seasonal entertainment.', 'Take a photo of a fall color palette that makes you pause.', '66% 45%', 'https://www.chambanamoms.com/events/the-great-pumpkin-hollow/']
+  ];
+  return <div className="ecotale-event-screen" style={{ width: '100%', height: '100%', position: 'relative', background: COLORS.bg, overflow: 'hidden' }}>
+    <StatusBar />
+    <div style={{ height: 'calc(100% - 54px)', overflowY: 'auto', paddingBottom: 102 }}>
+      <div style={{ textAlign: 'center', padding: '4px 0 11px' }}><div style={{ fontFamily: '-apple-system, system-ui', fontSize: 16, fontWeight: 650, color: COLORS.ink }}>Event</div><div style={{ fontFamily: '-apple-system, system-ui', fontSize: 12, color: COLORS.ink2, marginTop: 4 }}>Fall happenings around Champaign–Urbana</div></div>
+      <div style={{ margin: '0 20px 18px', height: 150, overflow: 'hidden', borderRadius: 19, position: 'relative', background: '#C89149' }}>
+        <img src={heroImage} alt="Apples and pumpkins in an autumn garden" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: '48% 61%', display: 'block' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(25,38,20,.72), rgba(25,38,20,.08))' }} />
+        <div style={{ position: 'absolute', left: 18, bottom: 17, right: 22, color: '#fff' }}><div style={{ fontFamily: '-apple-system, system-ui', fontSize: 11, letterSpacing: '.12em', fontWeight: 750 }}>OCTOBER 2026</div><div style={{ marginTop: 4, fontFamily: 'Georgia, serif', fontSize: 25, lineHeight: 1.05 }}>Find your next fall story.</div></div>
+      </div>
+      <div style={{ padding: '0 20px 6px', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}><h2 style={{ margin: 0, color: COLORS.ink, fontFamily: 'Georgia, serif', fontSize: 23, fontWeight: 500 }}>Coming up</h2><span style={{ color: COLORS.greenDeep, fontFamily: '-apple-system, system-ui', fontSize: 12, fontWeight: 700 }}>6 activities</span></div>
+      <div style={{ padding: '0 20px' }}>{events.map(([date, title, place, type, description, prompt, position, url], index) => <a key={title} href={url} target="_blank" rel="noreferrer" aria-label={'Open details for ' + title} style={{ display: 'block', marginTop: 13, overflow: 'hidden', textDecoration: 'none', color: 'inherit', background: '#fff', border: '1px solid #ECECE6', borderRadius: 17, boxShadow: '0 5px 14px rgba(40,50,35,.055)' }}>
+        <div style={{ height: 98, position: 'relative', overflow: 'hidden', background: '#C89149' }}><img src={heroImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: position, display: 'block', filter: index % 2 ? 'saturate(.92)' : 'saturate(1.08)' }} /><div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(17,30,16,.54), rgba(17,30,16,.03))' }} /><span style={{ position: 'absolute', top: 12, left: 13, padding: '5px 8px', borderRadius: 8, background: 'rgba(255,255,255,.91)', color: COLORS.greenDeep, fontFamily: '-apple-system, system-ui', fontSize: 11, fontWeight: 800, letterSpacing: '.04em' }}>{date}</span><span style={{ position: 'absolute', right: 14, bottom: 12, width: 31, height: 31, display: 'grid', placeItems: 'center', borderRadius: '50%', background: '#fff', color: COLORS.greenDeep, fontFamily: '-apple-system, system-ui', fontSize: 19, fontWeight: 500 }}>↗</span></div>
+        <div style={{ padding: '13px 15px 15px' }}><div style={{ color: COLORS.greenDeep, fontFamily: '-apple-system, system-ui', fontSize: 11, fontWeight: 750, letterSpacing: '.06em', textTransform: 'uppercase' }}>{type}</div><h3 style={{ margin: '5px 0 3px', color: COLORS.ink, fontFamily: 'Georgia, serif', fontSize: 20, lineHeight: 1.15, fontWeight: 500 }}>{title}</h3><div style={{ color: COLORS.ink2, fontFamily: '-apple-system, system-ui', fontSize: 13, fontWeight: 600 }}>{place}</div><p style={{ margin: '9px 0 0', color: COLORS.ink, fontFamily: '-apple-system, system-ui', fontSize: 13, lineHeight: 1.42 }}>{description}</p><div style={{ marginTop: 10, padding: '8px 10px', borderRadius: 10, background: COLORS.greenSoft, color: COLORS.greenDeep, fontFamily: '-apple-system, system-ui', fontSize: 12, lineHeight: 1.35, fontWeight: 650 }}>EcoTale prompt: {prompt}</div></div>
+      </a>)}</div>
+      <p style={{ padding: '18px 24px 0', margin: 0, color: COLORS.ink2, fontFamily: '-apple-system, system-ui', fontSize: 11, lineHeight: 1.45, textAlign: 'center' }}>Dates and availability can change. Open each card for the latest details.</p>
+    </div>
+    <TabBar active={activeTab} onChange={onTabChange} /><HomeIndicator />
+  </div>;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SPECIES DETAIL`
+    );
+  }
   profileEntry.compressed = true;
   profileEntry.data = zlib.gzipSync(Buffer.from(profile), { level: 9 }).toString('base64');
 }
