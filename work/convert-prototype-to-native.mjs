@@ -332,7 +332,7 @@ if (profileEntry) {
 // PROFILE`
     );
   }
-  if (!profile.includes('ecotale-event-screen')) {
+  if (profile.includes('function ExploreScreen')) {
     profile = profile.replace(
       /function ExploreScreen\([\s\S]*?\n}\n\n\/\/ ═+\n\/\/ SPECIES DETAIL/,
       `function ExploreScreen({ onTabChange, activeTab }) {
